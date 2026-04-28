@@ -1,0 +1,192 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  users     User[]
+  admins    Admin[]
+
+  @@map("roles")
+}
+
+model User {
+  id                 String              @id @default(uuid())
+  name               String
+  email              String?             @unique
+  phone              String?             @unique
+  password           String
+  roleId             String              @map("role_id")
+  role               Role                @relation(fields: [roleId], references: [id])
+  resetToken         String?             @map("reset_token")
+  resetTokenExpiry   DateTime?           @map("reset_token_expiry")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  unlockedChapters   ChapterUnlock[]
+  paymentSubmissions PaymentSubmission[]
+  pdfPurchases       PdfPurchase[]
+
+  @@map("users")
+  @@index([roleId])
+  @@index([phone])
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  roleId    String   @map("role_id")
+  role      Role     @relation(fields: [roleId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admins")
+  @@index([roleId])
+}
+
+model Book {
+  id           String        @id @default(uuid())
+  title        String
+  author       String        @default("Zandile.M Stories")
+  description  String        @db.Text
+  coverImage   String?       @map("cover_image")
+  pdfFile      String?       @map("pdf_file")
+  year         String?
+  genre        String?
+  status       String        @default("completed") // "completed", "in_progress", or "coming_soon"
+  releaseDate  DateTime?     @map("release_date")
+  price       Decimal?  @db.Decimal(10, 2)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  chapters     Chapter[]
+  pdfPurchases PdfPurchase[]
+
+  @@map("books")
+}
+
+model Chapter {
+  id                 String              @id @default(uuid())
+  bookId             String              @map("book_id")
+  title              String
+  content            String              @db.LongText
+  order              Int
+  isLocked           Boolean             @default(true) @map("is_locked")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  book               Book                @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  userUnlocks        ChapterUnlock[]
+  paymentSubmissions PaymentSubmission[]
+
+  @@map("chapters")
+  @@index([bookId])
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  amount        Decimal  @db.Decimal(10, 2)
+  type          String   // "sale", "refund", "subscription"
+  description   String?
+  bookId        String?  @map("book_id")
+  userId        String?  @map("user_id")
+  status        String   @default("completed") // "completed", "pending", "failed"
+  paymentMethod String?  @map("payment_method") // "card", "paypal", etc.
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("transactions")
+  @@index([createdAt])
+  @@index([type])
+  @@index([bookId])
+}
+
+model ChapterUnlock {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  chapterId String   @map("chapter_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, chapterId])
+  @@map("chapter_unlocks")
+  @@index([userId])
+  @@index([chapterId])
+}
+
+model PaymentSubmission {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  chapterId        String?  @map("chapter_id")
+  bookId           String?  @map("book_id")
+  purchaseType     String   @default("chapter") @map("purchase_type") // "chapter", "pdf"
+  paymentReference String   @map("payment_reference")
+  proofOfPayment   String?  @map("proof_of_payment") // File path to uploaded POP (PDF/image)
+  status           String   @default("pending") // "pending", "approved", "rejected"
+  adminNote        String?  @map("admin_note")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chapter          Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@map("payment_submissions")
+  @@index([userId])
+  @@index([chapterId])
+  @@index([bookId])
+  @@index([status])
+}
+
+model PdfPurchase {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  bookId    String   @map("book_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@map("pdf_purchases")
+  @@index([userId])
+  @@index([bookId])
+}
+
+model Settings {
+  id                    String   @id @default(uuid())
+  siteName              String   @default("Zandile.M Stories") @map("site_name")
+  adminEmail            String   @default("admin@zandile.com") @map("admin_email")
+  logoType              String   @default("text") @map("logo_type")
+  logoText              String   @default("Zandile M") @map("logo_text")
+  logoImage             String?  @map("logo_image")
+  downloadPriceCard     Decimal  @default(65) @db.Decimal(10, 2) @map("download_price_card")
+  downloadPriceBank     Decimal  @default(60) @db.Decimal(10, 2) @map("download_price_bank")
+  unlockChapterPriceCard Decimal  @default(35) @db.Decimal(10, 2) @map("unlock_chapter_price_card")
+  unlockChapterPriceBank Decimal  @default(30) @db.Decimal(10, 2) @map("unlock_chapter_price_bank")
+  currency              String   @default("ZAR")
+  bankName              String?  @map("bank_name")
+  accountNumber         String?  @map("account_number")
+  accountHolder         String?  @map("account_holder")
+  branchCode            String?  @map("branch_code")
+  accountType           String?  @map("account_type")
+  enableUserRegistration Boolean @default(true) @map("enable_user_registration")
+  enableEmailNotifications Boolean @default(true) @map("enable_email_notifications")
+  allowBookPreviews     Boolean  @default(true) @map("allow_book_previews")
+  requireLoginToRead    Boolean  @default(false) @map("require_login_to_read")
+  enablePayments        Boolean  @default(true) @map("enable_payments")
+  twoFactorAuth         Boolean  @default(false) @map("two_factor_auth")
+  autoLogoutInactivity  Boolean  @default(true) @map("auto_logout_inactivity")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

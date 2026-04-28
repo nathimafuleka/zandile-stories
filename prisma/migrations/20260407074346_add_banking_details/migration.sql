@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE `settings` ADD COLUMN `account_holder` VARCHAR(191) NOT NULL DEFAULT '',
+    ADD COLUMN `account_number` VARCHAR(191) NOT NULL DEFAULT '',
+    ADD COLUMN `account_type` VARCHAR(191) NOT NULL DEFAULT '',
+    ADD COLUMN `bank_name` VARCHAR(191) NOT NULL DEFAULT '',
+    ADD COLUMN `branch_code` VARCHAR(191) NOT NULL DEFAULT '';
