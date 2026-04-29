@@ -26,21 +26,20 @@ async function main() {
   console.log('✅ User role created:', userRole.id)
 
   console.log('👤 Creating default admin account...')
-  const hashedPassword = await bcrypt.hash('admin123', 10)
+  const hashedPassword = await bcrypt.hash('Mafuleka55', 10)
   
   const admin = await prisma.admin.upsert({
-    where: { email: 'admin@zandile.com' },
+    where: { email: 'admim@zandilem.co.za' },
     update: {},
     create: {
-      name: 'Zandile Admin',
-      email: 'admin@zandile.com',
+      name: 'Zandile Mafuleka',
+      email: 'admim@zandilem.co.za',
       password: hashedPassword,
       roleId: adminRole.id,
     },
   })
   console.log('✅ Admin account created:', admin.email)
-  console.log('   Email: admin@zandile.com')
-  console.log('   Password: admin123')
+  console.log('   Email: admim@zandilem.co.za')
   console.log('   ⚠️  Please change this password after first login!')
 
   console.log('\n✨ Seeding completed successfully!')
