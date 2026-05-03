@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 // Public endpoint to get settings (for displaying unlock prices, etc.)
 export async function GET() {
   try {
