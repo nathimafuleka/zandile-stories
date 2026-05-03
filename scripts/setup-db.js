@@ -30,8 +30,8 @@ socket.on('connect', () => {
 
     console.log('✅ Database setup complete!')
   } catch (err) {
-    console.error('❌ DB setup failed:', err.message)
-    process.exit(1)
+    console.warn('⚠️  DB setup failed (non-fatal):', err.message)
+    process.exit(0)
   }
 })
 
